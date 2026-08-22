@@ -1,0 +1,214 @@
+{
+  "info": {
+    "name": "CampusPass API",
+    "description": "Smart College Event Registration & QR Attendance System — import and run top to bottom for the full demo flow.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "organizerToken", "value": "" },
+    { "key": "studentToken", "value": "" },
+    { "key": "eventId", "value": "" },
+    { "key": "ticketId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Login as Organizer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('organizerToken', data.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"organizer@campuspass.com\",\n  \"password\": \"organizer123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Login as Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('studentToken', data.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@campuspass.com\",\n  \"password\": \"student123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Get My Profile (me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Events",
+      "item": [
+        {
+          "name": "Create Event (Organizer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('eventId', data._id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"CodeSprint 2026\",\n  \"description\": \"24-hour coding competition for 200 students\",\n  \"category\": \"Technical\",\n  \"venue\": \"Main Auditorium\",\n  \"dateTime\": \"2026-09-10T09:00:00.000Z\",\n  \"registrationLimit\": 200\n}"
+            },
+            "url": "{{baseUrl}}/events"
+          }
+        },
+        { "name": "List All Events", "request": { "method": "GET", "url": "{{baseUrl}}/events" } },
+        { "name": "Get Event By Id", "request": { "method": "GET", "url": "{{baseUrl}}/events/{{eventId}}" } },
+        {
+          "name": "Get My Created Events (Organizer)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organizerToken}}" }],
+            "url": "{{baseUrl}}/events/mine/list"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Registrations (QR Tickets)",
+      "item": [
+        {
+          "name": "Register for Event (Student)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('ticketId', data.registration.ticketId);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/registrations/{{eventId}}"
+          }
+        },
+        {
+          "name": "My Tickets (Student)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{studentToken}}" }],
+            "url": "{{baseUrl}}/registrations/me"
+          }
+        },
+        {
+          "name": "View Registrations For My Event (Organizer)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organizerToken}}" }],
+            "url": "{{baseUrl}}/registrations/event/{{eventId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Attendance (Scan)",
+      "item": [
+        {
+          "name": "Scan Ticket - First Time (expect success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"ticketId\": \"{{ticketId}}\"\n}" },
+            "url": "{{baseUrl}}/attendance/scan"
+          }
+        },
+        {
+          "name": "Scan Same Ticket Again (expect 409 Already Checked In)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"ticketId\": \"{{ticketId}}\"\n}" },
+            "url": "{{baseUrl}}/attendance/scan"
+          }
+        },
+        {
+          "name": "Scan Invalid Ticket (expect 404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"ticketId\": \"CP-DOESNOTEXIST\"\n}" },
+            "url": "{{baseUrl}}/attendance/scan"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Dashboard",
+      "item": [
+        {
+          "name": "Get Stats (Organizer)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{organizerToken}}" }],
+            "url": "{{baseUrl}}/dashboard/stats"
+          }
+        }
+      ]
+    }
+  ]
+}

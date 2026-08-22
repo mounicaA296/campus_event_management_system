@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-50 text-gray-900 font-body;
+}
+
+h1, h2, h3 {
+  @apply font-display;
+}
+/* Ticket-stub perforation divider — reused as the site's signature motif */
+.ticket-perforation {
+  background-image: radial-gradient(circle, #e5e7eb 2px, transparent 2px);
+  background-size: 14px 14px;
+  background-repeat: repeat-x;
+  height: 2px;
+}
